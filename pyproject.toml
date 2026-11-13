@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "dhcp-client-simulation"
 version = "0.1.0"
 description = "A simulated DHCP client for a computer networks project"
+dependencies = ["scapy>=2.6,<3"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
