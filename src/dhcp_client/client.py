@@ -14,18 +14,19 @@ from .packet import (
     parse_offer,
 )
 
-
+# This func. generates a random MAC address for the client
 def random_mac() -> str:
     mac = bytearray(secrets.token_bytes(6))
     mac[0] = (mac[0] & 0xFE) | 0x02
     return ":".join(f"{part:02x}" for part in mac)
 
-
+#This defines the interface of the transport layer for the client side.
 class DhcpTransport(Protocol):
     def exchange(self, packet: Packet, timeout: float) -> Packet | None:
         """Send one DHCP message and wait for its response."""
 
 
+# This class implements the transport layer for the DHCP client using Scapy.
 class ScapyTransport:
     def exchange(self, packet: Packet, timeout: float) -> Packet | None:
         previous_check_ipaddr = conf.checkIPaddr
@@ -62,11 +63,12 @@ class DhcpClient:
         self.timeout = timeout
         self.state = DhcpState.INIT
 
+    # This method implements the DHCP exchange to acquire a lease. -> The lease is a temporary IP address tied to the device on the network which allows for reuseable addresses
     def acquire_lease(self) -> DhcpLeaseInfo:
         if self.state is not DhcpState.INIT:
             raise RuntimeError("DHCP exchange can only be started once")
 
-        try:
+        try: 
             self.state = DhcpState.SELECTING
             discover = create_discover_packet(self.client_mac, self.xid)
             offer_packet = self.transport.exchange(discover, self.timeout)
@@ -122,16 +124,21 @@ def main() -> None:
     client = DhcpClient(ScapyTransport(), client_mac, xid)
 
     print(f"Starting simulator with MAC address: {client_mac}")
-    try:
-        lease = client.acquire_lease()
-    except (TimeoutError, DhcpNakError, PacketValidationErr) as ex:
-        print(f"DHCP exchange failed: {ex}")
-        raise SystemExit(1) from ex
 
-    print("DHCP lease received (not applied to this computer):")
-    print(f"  Address: {lease.address}")
-    print(f"  Server: {lease.server_id}")
-    print(f"  Lease time: {lease.lease_time}")
+    while True:
+        print("Sending DHCP Discover...")
+        print("Waiting for DHCP Offer...")
+
+        try:
+            lease = client.acquire_lease()
+        except (TimeoutError, DhcpNakError, PacketValidationErr) as ex:
+            print(f"DHCP exchange failed: {ex}")
+            raise SystemExit(1) from ex
+
+        print("DHCP lease received (not applied to this computer):")
+        print(f"  Address: {lease.address}")
+        print(f"  Server: {lease.server_id}")
+        print(f"  Lease time: {lease.lease_time}")
 
 
 if __name__ == "__main__":
